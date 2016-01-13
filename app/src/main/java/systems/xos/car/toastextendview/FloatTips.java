@@ -34,7 +34,7 @@ public class FloatTips{
         this.mContext = context;
         mHandler = new Handler();
         params = new WindowManager.LayoutParams();
-        params.height = dip2px(mContext,160f);
+        params.height = WindowManager.LayoutParams.WRAP_CONTENT;
         params.width = WindowManager.LayoutParams.MATCH_PARENT;
         params.format = PixelFormat.TRANSLUCENT;
         params.alpha = 80;
