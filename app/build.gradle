@@ -9,7 +9,7 @@ android {
     defaultConfig {
         applicationId "systems.xos.car.toastextendview"
         minSdkVersion 19
-        targetSdkVersion 22
+        targetSdkVersion 19
         versionCode 1
         versionName "1.0"
     }

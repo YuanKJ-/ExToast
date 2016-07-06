@@ -2,10 +2,12 @@ package systems.xos.car.toastextendview;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.view.Gravity;
 import android.view.MotionEvent;
 
 public class MainActivity extends Activity {
 
+    private MiExToast miToast;
     private ExToast exToast;
     ADToast adToast;
     FloatTips floatTips;
@@ -15,12 +17,17 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-//        exToast = ExToast.makeText(this,"fuck  The  Dog",ExToast.LENGTH_ALWAYS);
+//        exToast = ExToast.makeText(this,"Test ExToast",ExToast.LENGTH_ALWAYS);
 //        exToast.setAnimations(R.style.anim_view);
 //        exToast.show();
 
-        adToast = new ADToast(this.getApplicationContext());
-        adToast.show();
+        miToast = new MiExToast(getApplicationContext());
+        miToast.setDuration(MiExToast.LENGTH_ALWAYS);
+        miToast.setAnimations(R.style.anim_view);
+        miToast.show();
+
+//        adToast = new ADToast(this.getApplicationContext());
+//        adToast.show();
 
 //        floatTips = new FloatTips(this.getApplicationContext());
 //        floatTips.setGravity(FloatTips.TOP);
@@ -41,6 +48,8 @@ public class MainActivity extends Activity {
     @Override
     protected void onPause() {
         super.onPause();
+//        floatTips.hideImmediate();
+//        floatTips.hide();
 //        floatTips.hide();
 //        exToast.hide();
     }

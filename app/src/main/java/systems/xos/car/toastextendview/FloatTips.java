@@ -3,6 +3,7 @@ package systems.xos.car.toastextendview;
 import android.content.Context;
 import android.graphics.PixelFormat;
 import android.os.Handler;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -95,6 +96,15 @@ public class FloatTips{
         if (mView != null) {
             if (mView.getParent() != null) {
                 mWM.removeView(mView);
+            }
+        }
+    }
+
+    public void hideImmediate(){
+        if (mView != null) {
+            if (mView.getParent() != null) {
+                params.windowAnimations = 0;
+                mWM.updateViewLayout(mView, params);
             }
         }
     }

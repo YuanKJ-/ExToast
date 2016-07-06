@@ -1,20 +1,22 @@
 package systems.xos.car.toastextendview;
 
-import android.app.ITransientNotification;
 import android.content.Context;
 import android.content.res.Resources;
 import android.os.Handler;
-import android.os.RemoteException;
+import android.util.Log;
+import android.view.Gravity;
+import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 
-/**
- * Created by ykj on 15-12-22.
- */
-public class ExToast {
+public class MiExToast implements View.OnTouchListener {
     private static final String TAG = "ExToast";
 
     public static final int LENGTH_ALWAYS = 0;
@@ -27,14 +29,29 @@ public class ExToast {
     private int animations = -1;
     private boolean isShow = false;
 
-    private ITransientNotification mTN;
+    private Object mTN;
+    private Method show;
+    private Method hide;
+    private WindowManager mWM;
+    private WindowManager.LayoutParams params;
+    private View mView;
+
+    private float mTouchStartX;
+    private float mTouchStartY;
+    private float x;
+    private float y;
+
     private Handler handler = new Handler();
 
-    public ExToast(Context context){
+    public MiExToast(Context context){
         this.mContext = context;
         if (toast == null) {
             toast = new Toast(mContext);
         }
+        LayoutInflater inflate = (LayoutInflater)
+                mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        mView = inflate.inflate(R.layout.float_tips_layout, null);
+        mView.setOnTouchListener(this);
     }
 
     private Runnable hideRunnable = new Runnable() {
@@ -49,11 +66,13 @@ public class ExToast {
      */
     public void show(){
         if (isShow) return;
-
+        TextView tv = (TextView)mView.findViewById(R.id.message);
+        tv.setText("悬浮窗");
+        toast.setView(mView);
         initTN();
         try {
-            mTN.show();
-        } catch (RemoteException e) {
+            show.invoke(mTN);
+        } catch (InvocationTargetException | IllegalAccessException e) {
             e.printStackTrace();
         }
         isShow = true;
@@ -71,8 +90,8 @@ public class ExToast {
     public void hide(){
         if(!isShow) return;
         try {
-            mTN.hide();
-        } catch (RemoteException e) {
+            hide.invoke(mTN);
+        } catch (InvocationTargetException | IllegalAccessException e) {
             e.printStackTrace();
         }
         isShow = false;
@@ -128,16 +147,16 @@ public class ExToast {
         return toast.getYOffset();
     }
 
-    public static ExToast makeText(Context context, CharSequence text, int duration) {
+    public static MiExToast makeText(Context context, CharSequence text, int duration) {
         Toast toast = Toast.makeText(context,text,Toast.LENGTH_SHORT);
-        ExToast exToast = new ExToast(context);
+        MiExToast exToast = new MiExToast(context);
         exToast.toast = toast;
         exToast.mDuration = duration;
 
         return exToast;
     }
 
-    public static ExToast makeText(Context context, int resId, int duration)
+    public static MiExToast makeText(Context context, int resId, int duration)
             throws Resources.NotFoundException {
         return makeText(context, context.getResources().getText(resId), duration);
     }
@@ -162,13 +181,18 @@ public class ExToast {
         try {
             Field tnField = toast.getClass().getDeclaredField("mTN");
             tnField.setAccessible(true);
-            mTN = (ITransientNotification) tnField.get(toast);
+            mTN = tnField.get(toast);
+            show = mTN.getClass().getMethod("show");
+            hide = mTN.getClass().getMethod("hide");
+
+            Field tnParamsField = mTN.getClass().getDeclaredField("mParams");
+            tnParamsField.setAccessible(true);
+            params = (WindowManager.LayoutParams) tnParamsField.get(mTN);
+            params.flags = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL
+                    | WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
 
             /**设置动画*/
             if (animations != -1) {
-                Field tnParamsField = mTN.getClass().getDeclaredField("mParams");
-                tnParamsField.setAccessible(true);
-                WindowManager.LayoutParams params = (WindowManager.LayoutParams) tnParamsField.get(mTN);
                 params.windowAnimations = animations;
             }
 
@@ -177,9 +201,41 @@ public class ExToast {
             tnNextViewField.setAccessible(true);
             tnNextViewField.set(mTN, toast.getView());
 
+            mWM = (WindowManager)mContext.getApplicationContext().getSystemService(Context.WINDOW_SERVICE);
         } catch (Exception e) {
             e.printStackTrace();
         }
+        setGravity(Gravity.LEFT | Gravity.TOP,0 ,0);
+    }
+
+    private void updateViewPosition(){
+        //更新浮动窗口位置参数
+        params.x=(int) (x-mTouchStartX);
+        params.y=(int) (y-mTouchStartY);
+        mWM.updateViewLayout(toast.getView(), params);  //刷新显示
+    }
+
+    @Override
+    public boolean onTouch(View v, MotionEvent event) {
+        //获取相对屏幕的坐标，即以屏幕左上角为原点
+        x = event.getRawX();
+        y = event.getRawY();
+        Log.i("currP", "currX"+x+"====currY"+y);
+        switch (event.getAction()) {
+            case MotionEvent.ACTION_DOWN:    //捕获手指触摸按下动作
+                //获取相对View的坐标，即以此View左上角为原点
+                mTouchStartX =  event.getX();
+                mTouchStartY =  event.getY();
+                Log.i("startP","startX"+mTouchStartX+"====startY"+mTouchStartY);
+                break;
+            case MotionEvent.ACTION_MOVE:   //捕获手指触摸移动动作
+                updateViewPosition();
+                break;
+            case MotionEvent.ACTION_UP:    //捕获手指触摸离开动作
+                updateViewPosition();
+                break;
+        }
+        return true;
     }
 
 }
